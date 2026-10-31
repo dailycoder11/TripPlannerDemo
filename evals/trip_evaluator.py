@@ -59,9 +59,31 @@ def evaluate_itinerary(
         failures.append(f"Itinerary is not valid structured JSON: {exc}")
         return {"status": "FAIL", "checks": checks, "failures": failures}
 
-    checks["format"] = "PASS"
+    expected_plan_keys = {"cost_per_person", "activities"}
+    schema_valid = set(plan) == expected_plan_keys
+    raw_activities = plan.get("activities")
+    expected_activity_keys = {
+        "date", "start_time", "end_time", "title", "category", "description"
+    }
+    if not isinstance(raw_activities, list):
+        schema_valid = False
+    else:
+        for activity in raw_activities:
+            if not isinstance(activity, dict) or set(activity) != expected_activity_keys:
+                schema_valid = False
+                break
+            if any(not isinstance(activity.get(key), str) for key in expected_activity_keys):
+                schema_valid = False
+                break
+            if activity.get("category", "").strip().casefold() not in {"activity", "meal"}:
+                schema_valid = False
+                break
+    record("format", schema_valid, "Itinerary does not match the required JSON structure")
     raw_cost = plan.get("cost_per_person")
-    cost_valid = isinstance(raw_cost, (int, float)) and not isinstance(raw_cost, bool) and math.isfinite(raw_cost)
+    cost_valid = (
+        isinstance(raw_cost, (int, float)) and not isinstance(raw_cost, bool)
+        and math.isfinite(raw_cost) and raw_cost > 0
+    )
     record("budget", bool(cost_valid and raw_cost <= budget_per_person), "Budget exceeded or per-person cost is missing/invalid")
 
     activities = plan.get("activities")

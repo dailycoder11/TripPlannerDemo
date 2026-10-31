@@ -5,6 +5,7 @@
   "logRequestAndResponse": false,
   "provider": "groq",
   "model": "openai/gpt-oss-120b",
+  "screeningModel": "openai/gpt-oss-20b",
   "criticModel": "openai/gpt-oss-20b",
   "temperature": 0.4,
   "maxTokens": 1800,
