@@ -2,9 +2,20 @@
 
 
 
-## Phase8: request-screening-and-tool-validation
+## Phase 8: request-screening-and-tool-validation
 
-Adds preflight screening before memory or planning, plus deterministic validation of tool arguments and external tool results.
+**Security focus:** this stage adds layered defenses against prompt injection and task drift in trip requests and external tool data. A prompt injection is text that tries to make the model ignore its intended task or rules—for example, instructions to change roles, reveal prompts or secrets, access other users' data, or perform an unrelated action.
+
+### Prompt-injection screening
+
+Before memory lookup or itinerary planning, the configurable screening model classifies the submitted request and extracts only the supported trip fields. It is instructed to treat quoted or embedded instructions as untrusted content to classify, not directions to follow. Application code validates the response and checks that extracted values still match the submitted form. If the screen flags suspicious or unrelated instructions—or its response is malformed, invalid, or unavailable—the request stops. Unscreened input is not passed to memory or the planner.
+
+### Untrusted tool data
+
+Prompt injection can also arrive in external data. Before results reach the planner, tool arguments are checked against each tool's allowed schema and limits. Tool results are validated: attraction descriptions are discarded, retained names and categories are screened for suspicious text, and coordinates are range-checked; weather dates and measurements are checked; route labels and distance/time values are checked. Invalid or suspicious results are withheld and stop planning. The harness also limits each tool to one execution per request.
+
+These controls reduce risk but do not guarantee that every injection attempt will be detected. The screening model can miss attacks or flag benign requests, and text-pattern checks cannot prove arbitrary content harmless. See **Phase 8: trip-request safety screening** below for detailed behavior and configuration.
+
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq, supported by attraction, weather, and route data tools.
 
 ## Run locally
