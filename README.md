@@ -1,5 +1,10 @@
 # Daytrip
 
+
+
+## Phase3: tool-call-safety-harness
+
+Adds a tool harness that limits calls, blocks duplicates, constrains weather dates to the trip, and caps attraction results.
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq, supported by attraction, weather, and route data tools.
 
 ## Run locally
