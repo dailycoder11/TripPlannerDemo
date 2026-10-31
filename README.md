@@ -1,5 +1,10 @@
 # Daytrip
 
+
+
+## Phase1: basic-daytrip-planner
+
+A Streamlit day-trip planner that collects trip details, generates an itinerary with a Groq model, and logs model invocations.
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq.
 
 ## Run locally
