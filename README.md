@@ -1,5 +1,10 @@
 # Daytrip
 
+
+
+## Phase5: validated-trip-plan-memory
+
+Adds local JSON memory for successful plans and reuses a close match by destination, date, and budget.
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq, supported by attraction, weather, and route data tools.
 
 ## Run locally
