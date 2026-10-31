@@ -1,5 +1,10 @@
 # Daytrip
 
+
+
+## Phase2: trip-planner-with-live-data-tools
+
+Adds attraction search, weather, and route tools so the planner can use current external data while building an itinerary.
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq, supported by attraction, weather, and route data tools.
 
 ## Run locally
