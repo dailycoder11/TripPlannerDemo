@@ -1,5 +1,10 @@
 # Daytrip
 
+
+
+## Phase4: itinerary-evaluation-and-revision
+
+Adds deterministic itinerary checks for budget, schedule, activities, meals, and trip dates, with one bounded revision attempt.
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq, supported by attraction, weather, and route data tools.
 
 ## Run locally
