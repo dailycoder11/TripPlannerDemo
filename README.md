@@ -11,6 +11,24 @@ Requires Python 3.10 or newer.
 3. Copy `.env.example` to `.env`; set `GROQ_API_KEY` and `OPENTRIPMAP_API_KEY` (get an OpenTripMap key from its API provider).
 4. Start the app: `streamlit run app.py`.
 
+## Phase 7: A2A ticket-booking demo
+
+Daytrip and the dummy ticket-booking agent run as separate processes. Both read `GROQ_API_KEY` from the root `.env` file (or their process environment); the key is never sent over A2A. Start the booking service in one terminal, then Daytrip in another:
+
+```sh
+.venv/bin/python -m booking_service.server
+```
+
+```sh
+.venv/bin/streamlit run app.py
+```
+
+The A2A endpoint defaults to `http://127.0.0.1:8001`; change `bookingServiceUrl` in `config/app.json` or set `DAYTRIP_BOOKING_URL` for Daytrip. The service host, port, model, JSON storage path, and minimum policy values live in `booking_service/config.json`. Its local JSON file is `booking_service/bookings.json` and is ignored by Git.
+
+The booking service writes one JSON log record per processed A2A task to its process output. Each record includes the task ID, final status, confirmation ID when present, and all five defined request parameters; credentials are excluded.
+
+Booking requests travel as an A2A task with a JSON data artifact containing `request_id`, `event_name`, `event_date`, `attendee_count`, and `amount_per_person_inr`. The result artifact has `status` set to `confirmed`, `proposal`, or `failed`. Confirmations include a dummy confirmation ID and total; proposals include the original request, suggested attendee count and amount per person, and an explanation. Daytrip asks the user to accept or decline a proposal. Acceptance sends a new A2A task; the booking service validates it again before creating any dummy booking.
+
 Groq and OpenTripMap API keys stay server-side and are never written to logs. Open-Meteo, OpenStreetMap Nominatim, and OSRM calls do not need API keys. Do not commit `.env`.
 
 ## Configuration and invocation logs

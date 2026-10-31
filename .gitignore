@@ -1,6 +1,7 @@
 .env
 logs/*
 !logs/.gitkeep
+booking_service/bookings.json
 __pycache__/
 *.py[cod]
 .venv/

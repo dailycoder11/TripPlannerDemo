@@ -14,6 +14,7 @@ from typing import Any, Callable
 import streamlit as st
 from dotenv import load_dotenv
 from groq import Groq, RateLimitError
+from booking_service.client import BookingServiceError, send_booking_request
 
 from agents.critic import review_plan
 from evals.trip_evaluator import MAX_REVISIONS, evaluate_itinerary
@@ -25,6 +26,7 @@ from config.settings import ROOT_DIR, load_settings
 
 load_dotenv(ROOT_DIR / ".env")
 SETTINGS = load_settings()
+BOOKING_SERVICE_URL = os.getenv("DAYTRIP_BOOKING_URL", SETTINGS.get("bookingServiceUrl", "http://127.0.0.1:8001")).rstrip("/")
 LOG_PATH = (ROOT_DIR / SETTINGS.get("logFile", "logs/invocations.jsonl")).resolve()
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -414,6 +416,8 @@ st.markdown(
       [data-testid="stTextInput"] input,[data-testid="stNumberInput"] input,[data-testid="stDateInput"] input,[data-testid="stTimeInput"] input,[data-testid="stSelectbox"] div[data-baseweb="select"] { border-color:#e7e9e2; border-radius:3px; }
       [data-testid="stFormSubmitButton"] button { min-height:46px; margin-top:.5rem; border:0; border-radius:3px; background:var(--green); color:white; font-weight:600; }
       [data-testid="stFormSubmitButton"] button:hover { background:#254632; color:white; }
+      [data-testid="stButton"] button { min-height:46px; margin-top:.5rem; border:0; border-radius:3px; background:var(--green); color:white; font-weight:600; }
+      [data-testid="stButton"] button:hover { background:#254632; color:white; }
       .fineprint { padding-top:12px; color:#929b91; text-align:center; font-size:10px; }
       .result-panel { margin-top:1.5rem; padding:1.6rem 1.8rem; background:#fff; border:1px solid #edeee9; border-radius:5px; line-height:1.75; }
       .result-panel h1,.result-panel h2,.result-panel h3 { color:#2d3c30; font-family:'Manrope',sans-serif; }
@@ -472,6 +476,12 @@ if submitted:
     elif budget_per_person <= 0:
         st.error("Enter a budget greater than zero per person.")
     else:
+        for key in ("itinerary", "evaluation", "critic_feedback", "critic_completed", "trip_inputs", "trip_summary", "booking_result", "booking_request", "booking_retry_request", "booking_request_id", "booking_accepted_request_id", "booking_state"):
+            st.session_state.pop(key, None)
+        st.session_state.pop("ticket_amount_per_person", None)
+        st.session_state["ticket_event_name"] = ""
+        st.session_state["ticket_event_date"] = trip_date
+        st.session_state["ticket_attendee_count"] = int(people)
         st.session_state.pop("memory_reused_from", None)
         rate_limit_notice = st.empty()
 
@@ -581,8 +591,20 @@ if submitted:
                     else:
                         print("[CRITIC] review unavailable")
             st.session_state["critic_feedback"] = critic_feedback
+            st.session_state["critic_completed"] = True
             st.session_state["itinerary"] = itinerary
             st.session_state["evaluation"] = evaluation
+            planned_booking_cost = (parse_structured_itinerary(itinerary) or {}).get("cost_per_person")
+            if (isinstance(planned_booking_cost, (int, float)) and not isinstance(planned_booking_cost, bool)
+                    and planned_booking_cost > 0):
+                st.session_state["ticket_amount_per_person"] = float(planned_booking_cost)
+            else:
+                st.session_state["ticket_amount_per_person"] = 1000.0
+            st.session_state["trip_inputs"] = {
+                "destination": destination.strip(),
+                "trip_date": trip_date,
+                "people": int(people),
+            }
             st.session_state["trip_summary"] = (
                 f"{destination.strip()} · {trip_date.strftime('%A, %B %-d, %Y')} · "
                 f"{int(people)} {'person' if int(people) == 1 else 'people'} · "
@@ -614,5 +636,142 @@ if st.session_state.get("itinerary"):
         st.caption("Critic feedback is unavailable for this plan.")
     st.caption("Costs and local suggestions are estimates. Please confirm timings and prices before you go.")
     st.markdown("</div>", unsafe_allow_html=True)
+
+    # A booking action becomes available only after the itinerary passed its
+    # deterministic checks and the advisory critic step has finished.
+    evaluation = st.session_state.get("evaluation") or {}
+    trip_inputs = st.session_state.get("trip_inputs") or {}
+    if evaluation.get("status") == "PASS" and st.session_state.get("critic_completed"):
+        st.markdown('<div class="result-panel"><div class="section-kicker">OPTIONAL NEXT STEP</div><h2>Tickets for your day</h2>', unsafe_allow_html=True)
+        st.caption("Review the event details before sending a request to the separate booking agent.")
+        result = st.session_state.get("booking_result") or {}
+        event_name = ""
+        event_date = trip_inputs.get("trip_date", date.today())
+        if not result:
+            if "ticket_event_name" not in st.session_state:
+                st.session_state["ticket_event_name"] = ""
+            if "ticket_event_date" not in st.session_state:
+                st.session_state["ticket_event_date"] = event_date
+            if "ticket_attendee_count" not in st.session_state:
+                st.session_state["ticket_attendee_count"] = max(1, int(trip_inputs.get("people", 2)))
+            if "ticket_amount_per_person" not in st.session_state:
+                current_plan = parse_structured_itinerary(st.session_state["itinerary"]) or {}
+                suggested_cost = current_plan.get("cost_per_person")
+                st.session_state["ticket_amount_per_person"] = (
+                    float(suggested_cost)
+                    if isinstance(suggested_cost, (int, float)) and not isinstance(suggested_cost, bool) and suggested_cost > 0
+                    else 1000.0
+                )
+            with st.form("ticket_request", clear_on_submit=False):
+                event_name = st.text_input("Ticket or event name", key="ticket_event_name", placeholder="For example, museum entry")
+                date_col, attendees_col = st.columns(2)
+                with date_col:
+                    event_date = st.date_input("Event date", key="ticket_event_date")
+                with attendees_col:
+                    attendee_count = st.number_input("Number of attendees", min_value=1, step=1, key="ticket_attendee_count")
+                amount_per_person = st.number_input("Amount per person (INR)", min_value=1.0, step=100.0, format="%.2f", key="ticket_amount_per_person")
+                booking_submitted = st.form_submit_button("Continue booking", use_container_width=True)
+            if booking_submitted:
+                if not event_name.strip():
+                    st.error("Enter the ticket or event name to continue.")
+                else:
+                    request_details = {
+                        "event_name": event_name.strip(),
+                        "event_date": event_date.isoformat(),
+                        "attendee_count": int(attendee_count),
+                        "amount_per_person_inr": float(amount_per_person),
+                    }
+                    previous_request = st.session_state.get("booking_request") or {}
+                    previous_details = {key: value for key, value in previous_request.items() if key != "request_id"}
+                    request_id = previous_request.get("request_id") if previous_details == request_details else str(uuid.uuid4())
+                    request_data = {"request_id": request_id, **request_details}
+                    st.session_state["booking_request"] = request_data
+                    st.session_state["booking_retry_request"] = request_data
+                    st.session_state["booking_request_id"] = request_id
+                    with st.spinner("Contacting the ticket-booking agent…"):
+                        try:
+                            result, task_id = send_booking_request(BOOKING_SERVICE_URL, request_data)
+                            st.session_state["booking_result"] = result
+                            st.session_state["booking_state"] = result["status"]
+                            print(f"[A2A] task_id={task_id or 'unknown'} status={result['status']} confirmation_id={result.get('confirmation_id', '')}")
+                        except BookingServiceError as booking_error:
+                            st.session_state["booking_result"] = {"status": "failed", "message": str(booking_error)}
+                            st.session_state["booking_state"] = "unavailable"
+                            print(f"[A2A] status=unavailable error={type(booking_error).__name__}")
+        result = st.session_state.get("booking_result") or {}
+        if result.get("status") == "confirmed":
+            st.success("Booking confirmed by the ticket-booking agent.")
+            st.write(f"**Confirmation ID:** {result.get('confirmation_id', '')}")
+            st.write(f"**Event:** {result.get('event_name', '')} · {result.get('event_date', '')}")
+            st.write(f"**Attendees:** {result.get('attendee_count', '')}")
+            st.write(f"**Amount per person:** INR {result.get('amount_per_person_inr', 0):,.2f}")
+            st.write(f"**Total:** INR {result.get('total_amount_inr', 0):,.2f}")
+            st.write(f"**Status:** {result.get('booking_status', 'confirmed')}")
+        elif result.get("status") == "proposal":
+            proposal = result.get("suggested_values", {})
+            original = result.get("original_request", {})
+            st.info("Proposal awaiting your choice. No booking has been created.")
+            st.write(
+                f"**Original request:** {original.get('event_name', '')} · {original.get('event_date', '')} · "
+                f"{original.get('attendee_count', '')} attendees · "
+                f"INR {original.get('amount_per_person_inr', 0):,.2f} per person"
+            )
+            st.write(f"**Suggested attendees:** {proposal.get('attendee_count', '')}")
+            st.write(f"**Suggested amount per person:** INR {proposal.get('amount_per_person_inr', 0):,.2f}")
+            st.write(result.get("explanation", ""))
+            accept_col, decline_col = st.columns(2)
+            with accept_col:
+                accept_proposal = st.button("Continue booking", key="accept_booking_proposal", use_container_width=True)
+            with decline_col:
+                decline_proposal = st.button("Decline proposal", key="decline_booking_proposal", use_container_width=True)
+            if decline_proposal:
+                st.session_state["booking_result"] = {"status": "declined"}
+                st.session_state["booking_state"] = "declined"
+                st.rerun()
+            if accept_proposal:
+                accepted_id = st.session_state.get("booking_accepted_request_id")
+                if not accepted_id:
+                    accepted_id = str(uuid.uuid4())
+                    st.session_state["booking_accepted_request_id"] = accepted_id
+                accepted_request = {
+                    "request_id": accepted_id,
+                    "event_name": original.get("event_name", event_name),
+                    "event_date": original.get("event_date", event_date.isoformat()),
+                    "attendee_count": int(proposal["attendee_count"]),
+                    "amount_per_person_inr": float(proposal["amount_per_person_inr"]),
+                }
+                st.session_state["booking_retry_request"] = accepted_request
+                with st.spinner("Checking your revised request…"):
+                    try:
+                        final_result, task_id = send_booking_request(BOOKING_SERVICE_URL, accepted_request)
+                        st.session_state["booking_result"] = final_result
+                        st.session_state["booking_state"] = final_result["status"]
+                        print(f"[A2A] task_id={task_id or 'unknown'} status={final_result['status']} confirmation_id={final_result.get('confirmation_id', '')}")
+                    except BookingServiceError as booking_error:
+                        st.session_state["booking_result"] = {"status": "failed", "message": str(booking_error)}
+                        st.session_state["booking_state"] = "unavailable"
+                        print(f"[A2A] status=unavailable error={type(booking_error).__name__}")
+                st.rerun()
+        elif result.get("status") == "declined":
+            st.caption("Proposal declined. No booking was created.")
+        elif result:
+            if st.session_state.get("booking_state") == "unavailable":
+                st.error(result.get("message", "The booking service is unavailable."))
+                if st.button("Retry booking request", key="retry_booking_request"):
+                    request_data = st.session_state.get("booking_retry_request")
+                    if request_data:
+                        with st.spinner("Retrying the same booking request…"):
+                            try:
+                                retry_result, task_id = send_booking_request(BOOKING_SERVICE_URL, request_data)
+                                st.session_state["booking_result"] = retry_result
+                                st.session_state["booking_state"] = retry_result["status"]
+                                print(f"[A2A] task_id={task_id or 'unknown'} status={retry_result['status']} confirmation_id={retry_result.get('confirmation_id', '')}")
+                            except BookingServiceError as booking_error:
+                                st.session_state["booking_result"] = {"status": "failed", "message": str(booking_error)}
+                                print(f"[A2A] status=unavailable error={type(booking_error).__name__}")
+                        st.rerun()
+            else:
+                st.error(result.get("message", "The booking service could not process this request."))
+        st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="footer">DAYTRIP ✳ &nbsp; MADE FOR THE IN-BETWEEN DAYS</div>', unsafe_allow_html=True)
