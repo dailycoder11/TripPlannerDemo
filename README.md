@@ -2,9 +2,9 @@
 
 
 
-## Phase 8: request-screening-and-tool-validation
+## Phase 8: prompt-injection-screening-and-tool-validation
 
-**Security focus:** this stage adds layered defenses against prompt injection and task drift in trip requests and external tool data. A prompt injection is text that tries to make the model ignore its intended task or rules—for example, instructions to change roles, reveal prompts or secrets, access other users' data, or perform an unrelated action.
+**Prompt-injection note:** screens trip requests for instructions that try to override the planner, expose prompts or secrets, access other users' data, or trigger unrelated actions. Suspicious requests stop before memory or planning; tool data is validated before use. These defenses reduce risk but cannot guarantee detection.
 
 ### Prompt-injection screening
 
