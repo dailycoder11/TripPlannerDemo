@@ -1,5 +1,10 @@
 # Daytrip
 
+
+
+## Phase7: a2a-ticket-booking-agent
+
+Adds a separately run ticket-booking service that communicates with Daytrip over A2A and supports a user approval step for proposals.
 A small Streamlit day trip planner. Enter a destination, date, group size, per-person budget, and time window to get an AI-generated itinerary through Groq, supported by attraction, weather, and route data tools.
 
 ## Run locally
