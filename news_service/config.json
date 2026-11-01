@@ -1,0 +1,9 @@
+{
+  "host": "127.0.0.1",
+  "port": 8003,
+  "databaseFile": "data/news.sqlite3",
+  "cities": ["Shimla", "Manali", "Jaipur", "Agra", "Udaipur"],
+  "maxResultsPerSearch": 10,
+  "searchDepth": "basic",
+  "requestTimeoutSeconds": 25
+}

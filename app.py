@@ -32,6 +32,7 @@ load_dotenv(ROOT_DIR / ".env")
 SETTINGS = load_settings()
 BOOKING_SERVICE_URL = os.getenv("DAYTRIP_BOOKING_URL", SETTINGS.get("bookingServiceUrl", "http://127.0.0.1:8001")).rstrip("/")
 POLICY_SERVICE_URL = os.getenv("DAYTRIP_POLICY_URL", SETTINGS.get("policyServiceUrl", "http://127.0.0.1:8002")).rstrip("/")
+NEWS_SERVICE_URL = os.getenv("DAYTRIP_NEWS_URL", SETTINGS.get("newsServiceUrl", "http://127.0.0.1:8003")).rstrip("/")
 LOG_PATH = (ROOT_DIR / SETTINGS.get("logFile", "logs/invocations.jsonl")).resolve()
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -57,17 +58,17 @@ def log_invocation(record: dict[str, Any]) -> None:
     LOGGER.info(json.dumps(record, ensure_ascii=False, default=str))
 
 
-def render_policy_chat() -> None:
-    """Render policy search in the sidebar without touching trip form state."""
+def render_policy_chat_contents(container: Any, form_key: str = "policy_question_form") -> None:
+    """Render policy search in a supplied panel without touching trip form state."""
     if "policy_chat_messages" not in st.session_state:
         st.session_state["policy_chat_messages"] = []
 
-    with st.sidebar:
+    with container:
         st.subheader("Ask about policy")
         st.caption(
             "Search saved travel-company and public policy sources. This panel is separate from planning and returns cited passages."
         )
-        with st.form("policy_question_form", clear_on_submit=True):
+        with st.form(form_key, clear_on_submit=True):
             question = st.text_input(
                 "Your policy question",
                 max_chars=1200,
@@ -156,6 +157,77 @@ def render_policy_chat() -> None:
                             key=f"policy-source-{message_index}-{match_index}",
                         )
                     st.divider()
+
+
+def render_policy_chat() -> None:
+    """Render policy search in the left sidebar."""
+    render_policy_chat_contents(st.sidebar)
+
+
+def render_tourism_news(destination: str, trip_date: date) -> None:
+    """Show supported city news in a right-aligned popover outside planner flow."""
+    if not destination.strip():
+        return
+    try:
+        response = requests.get(
+            f"{NEWS_SERVICE_URL}/api/v1/news",
+            params={"city": destination.strip()},
+            timeout=5,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict) or not isinstance(payload.get("available"), bool):
+            raise ValueError("unexpected tourism news response shape")
+    except (requests.RequestException, ValueError, TypeError):
+        return
+
+    if not payload["available"]:
+        return
+
+    _, news_control = st.columns([5, 1], gap="small")
+    with news_control:
+        with st.popover("📰 News", use_container_width=True):
+            st.subheader(f"{destination.strip()} tourism news")
+            if payload.get("serving_previous_snapshot"):
+                st.caption("Showing the last saved news snapshot; the latest refresh did not complete.")
+            current = payload.get("current")
+            comparison = payload.get("last_year_same_time")
+            if not isinstance(current, dict) or not isinstance(comparison, dict):
+                st.caption("Tourism news is not available for this city yet.")
+                return
+
+            st.caption(
+                f"Latest saved three-month news window · trip date {trip_date.strftime('%b %d, %Y').replace(' 0', ' ')} "
+                "does not change the comparison period."
+            )
+            for section_title, window, key in (
+                ("Current news", current, "current"),
+                ("Last year, same time", comparison, "previous"),
+            ):
+                st.subheader(section_title)
+                st.caption(f"{window.get('start_date', '')} to {window.get('end_date', '')}")
+                articles = window.get("articles")
+                if not isinstance(articles, list) or not articles:
+                    st.info("No matching news articles were found for this period.")
+                    continue
+                for article_index, article in enumerate(articles[:10]):
+                    if not isinstance(article, dict):
+                        continue
+                    title = html.escape(str(article.get("title", "News article")))
+                    excerpt = html.escape(str(article.get("excerpt", ""))).replace("\n", "<br>")
+                    st.markdown(
+                        f'<div style="background:#f1f5ed;color:#202a22;border:1px solid #d8e2d3;'
+                        f'border-radius:8px;padding:10px 12px;margin:8px 0 4px;line-height:1.5">'
+                        f'<strong style="color:#1f3d2b">{title}</strong><br><br>'
+                        f'<span style="color:#202a22">{excerpt}</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    published_date = article.get("published_date") or "Publication date not available"
+                    source_name = html.escape(str(article.get("source_name", "Source")))
+                    st.caption(f"{published_date} · {source_name}")
+                    source_url = article.get("source_url")
+                    if isinstance(source_url, str) and source_url.startswith(("https://", "http://")):
+                        st.link_button("Open article", source_url, key=f"news-{key}-{article_index}")
 
 
 def build_itinerary(
@@ -541,6 +613,9 @@ st.markdown(
       [data-testid="stFormSubmitButton"] button:hover { background:#254632; color:white; }
       [data-testid="stButton"] button { min-height:46px; margin-top:.5rem; border:0; border-radius:3px; background:var(--green); color:white; font-weight:600; }
       [data-testid="stButton"] button:hover { background:#254632; color:white; }
+      [data-testid="stPopover"] button { min-height:40px; margin-top:0; border:1px solid #d5dfd2 !important; border-radius:5px; background:#e8efe4 !important; color:#294332 !important; font-weight:600; box-shadow:none !important; }
+      [data-testid="stPopover"] button:hover { background:#dce8d7 !important; border-color:#b9cbb6 !important; color:#203a29 !important; }
+      [data-testid="stPopover"] button:focus-visible { outline:2px solid #315a42 !important; outline-offset:2px; }
       .fineprint { padding-top:12px; color:#929b91; text-align:center; font-size:10px; }
       .result-panel { margin-top:1.5rem; padding:1.6rem 1.8rem; background:#fff; border:1px solid #edeee9; border-radius:5px; line-height:1.75; }
       .result-panel h1,.result-panel h2,.result-panel h3 { color:#2d3c30; font-family:'Manrope',sans-serif; }
@@ -557,6 +632,11 @@ st.markdown(
     '<div class="topline"><div class="brand"><span class="brand-mark">d</span>daytrip<span style="color:#d48b59">.</span></div><div>✳ &nbsp; Your next good day starts here</div></div>',
     unsafe_allow_html=True,
 )
+
+policy_reopen, _ = st.columns([1, 8], gap="small")
+with policy_reopen:
+    with st.popover("📚", help="Open policy search", use_container_width=True):
+        render_policy_chat_contents(st.container(), form_key="policy_question_form_reopen")
 
 left, right = st.columns([0.94, 1.06], gap="large", vertical_alignment="top")
 with left:
@@ -592,6 +672,8 @@ with right:
         submitted = st.form_submit_button("Build my day  ↗", use_container_width=True)
 
     st.markdown('<div class="fineprint">✳ &nbsp; Thoughtfully made for your crew. No two days alike.</div>', unsafe_allow_html=True)
+
+render_tourism_news(destination, trip_date)
 
 if submitted:
     if not destination.strip():

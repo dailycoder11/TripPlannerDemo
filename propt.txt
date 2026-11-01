@@ -1,56 +1,73 @@
-Implement Phase 9: local RAG policy search for the existing Daytrip app.
+# Build Prompt: Phase 10 — City Tourism News Service
 
-First inspect the current repository, branch, README, configuration, Streamlit UI, existing booking service, and dependency setup. Preserve all earlier phase behavior. Add a separate policy service; it is a regular service, not an AI agent. Do not change the trip planner, prompt-injection screening, booking flow, or delete existing files or branches.
+Implement Phase 10, **City Tourism News**, for the existing Daytrip application. Treat the current repository and branch as the source of truth. Inspect the app, existing services, configuration, README, dependency versions, and tests before changing code. Preserve the existing trip-planning flow, prompt-injection protections, booking service, policy search, and all existing files and branches. Do not push unless explicitly requested. Do not send news content to the itinerary-planning model.
 
 ## Product goal
 
-Give a Daytrip user a small chat-style interface for searching a curated collection of official travel and digital-service policy documents. The service should return relevant excerpts with enough source metadata to locate and verify them. It is a source-finding aid, not legal advice, a compliance checker, or a statement of Daytrip policy.
+Add a separate local News Service that gathers tourism-related news for five configurable Indian cities and stores a searchable snapshot in a file-backed relational database. In the planner, let users open city news from a compact **News** panel on the right. This panel must not take over the main planning page or submit/change the trip form. The existing policy search stays on the left; keep a visible **📚** control so policy search remains available when the native left sidebar is collapsed.
 
-## Corpus
+The service is a regular data service, not an agent. It does not call an LLM and does not generate or interpret news.
 
-- Find and use approximately 6–10 current, relevant documents from official government, regulator, or service-provider sources.
-- Cover practical travel topics and digital-service/consumer policies relevant to this application.
-- Download PDF source files into `policy_service/documents/`; do not substitute generated summaries for source documents.
-- Keep a machine-readable `policy_service/sources.json` manifest with a stable ID, filename, title, issuer, topic/category, source URL, publication date if known, effective date if known, retrieval date, and a short validity/context note for every document.
-- Verify that each downloaded file is a readable PDF and that text extraction returns useful text. Record limitations such as scanned/image-only PDFs, missing dates, corrigenda, or future effective dates. Read amendments and corrigenda as related sources; do not imply a future rule is already in force.
-- Prefer authoritative first-party sources and avoid presenting the documents as Daytrip commitments.
+## City configuration and date windows
 
-## Retrieval service
+- Default to Shimla, Manali, Jaipur, Agra, and Udaipur. Keep this list in `news_service/config.json`, not in UI logic.
+- At service startup, calculate date windows from the current date. Search the previous twelve fully completed calendar months in four consecutive three-month windows, plus a comparison window for the same three-month period one year earlier as the latest of those four windows.
+- For example, on 1 November 2026, the four windows are November 2025–January 2026, February–April 2026, May–July 2026, and August–October 2026; also fetch August–October 2025 for the year-over-year comparison. Do not hard-code these example dates.
+- Search for tourism news for every configured city and each window. Request no more than ten results per city/window. Keep dates inclusive and consistent across provider queries and API responses.
+- Make the window-generation logic deterministic and unit-testable with an injected/current date.
 
-- Implement a standalone local FastAPI service under `policy_service/`; it is a retrieval service, not an agent and not a generative answer system.
-- On startup, load the manifest and PDFs, extract text while retaining page numbers, split text into overlapping bounded chunks, create embeddings, and build an in-memory vector index. Rebuild the index from the local files on each service start.
-- Use a public Hugging Face sentence embedding model suitable for semantic search (default suggestion: `sentence-transformers/all-MiniLM-L6-v2`). Cache/download it once. No Hugging Face authentication is needed for a public model. After the model is cached, embedding and search for user questions should work locally without per-question Internet access.
-- Normalize embeddings and use cosine-equivalent vector search (for example, normalized vectors with FAISS inner product). Make model name, device, chunk size/overlap, result limit, similarity threshold, host, port, and manifest path configurable.
-- Return matching source passages, not a fabricated or model-generated synthesis. A no-match result must be explicit. Deduplicate results sensibly while allowing multiple relevant documents/pages.
-- Handle missing or unreadable individual PDFs with health warnings, and fail startup clearly if no usable passages can be indexed. Avoid logging user questions or sensitive content unnecessarily.
-- Bind to loopback by default (`127.0.0.1`). This demo has no authentication; document that it must not be exposed to a network without adding access controls.
+## Search provider and cost controls
 
-## HTTP contract
+- Use Tavily Search API for news, with the news topic, explicit publication date bounds, basic search depth, and a maximum of ten results per request.
+- Before implementation, consult Tavily’s official, current API and pricing documentation. Use only the free allowance. Do not require a paid plan or payment method, configure paid overages, or fall back to another paid provider. If the free allowance is exhausted or Tavily fails, stop the refresh and retain the last complete database snapshot.
+- Read `TAVILY_API_KEY` from the environment or local `.env` file. Never hard-code, expose in the UI, or log the key. Do not perform a live search during development/tests unless a key is already configured and a live request is explicitly part of the authorized task.
+- Validate provider response shapes, deduplicate URLs within each city/window, retain only valid `http`/`https` links, and safely handle missing titles, excerpts, source names, or publication dates.
 
-Expose and document:
+## News Service, database, and HTTP API
 
-1. `GET /health`: readiness, indexed document/chunk counts, model name, and non-fatal source warnings. Return an unavailable status when startup could not create the index.
-2. `POST /api/v1/ask`: accept a JSON body with one bounded, non-empty `question` string; reject unknown fields and invalid input. Return the normalized question, `match_status` (`found` or `no_match`), at most two ranked matches, and a clear message. Each match should include document ID/title, issuer, category/topic, source URL, published/effective dates when known, validity note, retrieval date, page number(s), a similarity score, and excerpt. Log result IDs/pages/scores without logging question text. Do not add a hosted LLM, answer-generation API, or live web search to this request path.
+- Add an independent FastAPI service in `news_service/`, bound to `127.0.0.1` by default on port `8003`.
+- Keep host, port, city list, database path, result limit, request timeout, and search depth configurable.
+- Use Python’s built-in SQLite support with a default database at `news_service/data/news.sqlite3`. Store refresh/window metadata and each article’s city, date window, title, short excerpt, original URL, source hostname/name, publication date when available, and fetch timestamp. Keep the file easy to inspect with a VS Code SQLite viewer. Do not add a database server.
+- At startup, clear/replace the previous snapshot only after all requested searches have succeeded. Fetch all data first, then replace rows in a single transaction. On any provider or persistence failure, roll back and serve the previous complete snapshot. If no complete snapshot exists, report unavailable readiness and return no partial data.
+- Expose `GET /health` with readiness, last refresh status/time, counts, and any safe non-secret error summary.
+- Expose `GET /api/v1/news?city=<city>` with case-insensitive city matching. Return whether data is available, whether a prior snapshot is being served after a failed refresh, and two sections: the latest completed three-month period and its same-period-last-year comparison. Include each window’s start/end dates and up to ten articles. Unknown/unconfigured cities must return a clear unavailable/unsupported response without fabricated data.
+- Keep the local demo unauthenticated and loopback-bound by default. Document that network exposure requires authentication and access controls.
+- Log refresh outcomes, window/city counts, and safe status details. Do not log API keys or full article bodies.
 
-## Daytrip UI integration
+## Streamlit UI behavior
 
-- Add a visible Streamlit policy chat panel in the sidebar, separate from the main trip form. Use its own form so asking a policy question does not submit, clear, or otherwise change trip-planning state.
-- Submit questions to the local Policy Service and render each match as a readable citation card with excerpt, title, issuer, page, date/validity context, and clickable official source link.
-- Return and show only the top two matches. Include the retrieval similarity score in each result and the service logs. Label it in the UI as a similarity-based confidence score and explain that it is not a probability or guarantee of correctness.
-- Style result text with explicit readable foreground and background colors; verify excerpts remain legible in both light and dark app themes.
-- Show a clear no-match state and a helpful unavailable-service state. Validate the response shape before rendering; do not silently claim a search succeeded.
-- Keep the policy chat scoped to policy lookup. Do not route its question into the trip-planning agent or booking service.
-- Make the service URL configurable through the existing app configuration and an environment variable, with `http://127.0.0.1:8002` as the local default.
+- Reuse the existing destination and trip-date fields. Keep news separate from the itinerary prompt, planner form submission, and booking flow.
+- Show no tourism-news control when the destination is blank, unsupported, or has no city snapshot. Show a compact, right-aligned **📰 News** control only when the service says that city has data. Opening it should display a popover/panel with **Current news** and **Last year, same time**, window dates, and each article’s title, excerpt, publication date when known, source name, and clickable original link.
+- News must not occupy the planner’s main page by default. Keep the panel on the right side of the app; policy search stays on the left. Style the News and **📚** Policy controls with a light background and dark readable text, including hover and keyboard-focus states, consistent with the app theme.
+- If the service is unavailable, do not block or interrupt trip planning. Show a brief status only where appropriate; do not display a misleading News control for unsupported destinations.
+- Escape provider text before HTML rendering. Render links only when they use `http` or `https`.
+- Never pass article text, links, or news-service output to the planning agent.
 
-## Dependencies, documentation, and verification
+## Configuration and documentation
 
-- Add only required dependencies and preserve compatible version bounds for the repository's supported Python versions/platforms.
-- Update `README.md` with what Phase 9 does, corpus scope and limitations, prerequisites, installation, environment variables, exact commands to start the Policy Service and Streamlit app in separate terminals, example UI use, health/request API examples and response schema, model/cache behavior, local-only/no-auth boundary, and steps to add/replace sources and rebuild the index.
-- Keep credentials out of source files and logs. No API key is needed for the public embedding model. Existing Daytrip credentials may still be needed for the unrelated itinerary-planning features.
-- Verify JSON parsing, Python compilation, PDF validity/text extraction, API schema/input validation, and one representative semantic search with the local embedding model and FAISS. Run focused tests if available. Report the exact checks and any platform/runtime failures honestly; do not describe an unverified end-to-end flow as working.
+- Configure the app’s service URL with `DAYTRIP_NEWS_URL`, defaulting to `http://127.0.0.1:8003`.
+- Add `TAVILY_API_KEY` and `DAYTRIP_NEWS_URL` to `.env.example` with a placeholder and local default. Ensure `.env`, SQLite databases, and other local secrets/data stay out of Git.
+- Update `README.md` with Phase 10 behavior, default cities, provider/free-allowance setup and limits, date-window calculation, database location and VS Code viewing guidance, exact commands to start the News Service and Streamlit app in separate terminals, health/API examples, UI behavior, and last-good-snapshot handling. Explain that startup refreshes consume Tavily credits and paid requests are not made.
+- Ensure the root `propt.txt` contains only this Phase 10 build prompt.
+
+## Tests and verification
+
+Add focused tests for:
+
+- Date-window boundaries, including the 1 November 2026 example and year transitions.
+- Five configured cities and the expected per-city/window search count.
+- Provider request parameters, basic search depth, and max-ten limit.
+- Response validation, URL safety, and URL deduplication.
+- SQLite snapshot persistence and transactional rollback that retains the old snapshot after a failed refresh.
+- API responses for supported/unsupported cities, ready/unavailable state, and last-good-snapshot status.
+- UI states for blank/unsupported city, supported city with data, right-side News popover placement, and policy access when the sidebar is collapsed.
+- Ensure news requests do not modify planner form state or reach the planning/booking services.
+
+Run the focused and existing test suites, Python compilation, JSON/config validation, and a Streamlit app smoke check. Do not make a live Tavily request unless a valid key is already configured and the task explicitly authorizes it. Report precisely what was checked and any remaining setup or limitations.
 
 ## Constraints
 
-- Preserve all existing branches and files; do not delete unrelated content.
-- Do not add authentication, cloud vector storage, hosted model calls, generated answers, legal interpretations, or network searches on each question unless explicitly requested.
-- Keep user-facing explanations plain, cite primary sources, and state the source's limitations where relevant.
+- Preserve all existing files and branches; do not delete unrelated content.
+- Preserve the existing policy-search behavior and its access from the visible **📚** control.
+- Do not add a generative answer model, cloud vector store, live searches per user question, paid fallback provider, or news-to-agent connection.
+- Keep user-facing language plain, show source links, and avoid presenting search snippets as verified facts beyond what the linked source supports.

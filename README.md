@@ -1,6 +1,6 @@
 # Daytrip
 
-Daytrip is a Streamlit day-trip planner. Its itinerary flow uses Groq and travel-data tools. **Phase 9** adds a separate local Policy Service where users can search travel-company and public policy documents and inspect cited excerpts. Policy search is a regular retrieval service, not an agent: it does not generate answers, interpret law, or make live web searches for each question.
+Daytrip is a Streamlit day-trip planner. Its itinerary flow uses Groq and travel-data tools. **Phase 9** adds a separate local Policy Service where users can search travel-company and public policy documents and inspect cited excerpts. **Phase 10** adds a local service that collects and compares tourism news for five configured Indian cities. Policy search and news collection run as services, separate from the itinerary agent.
 
 ## Phase 9: Policy Search (RAG)
 
@@ -94,9 +94,25 @@ The request contains one non-empty `question` string of up to 1,200 characters. 
 - To add or replace sources, put verified PDFs in `policy_service/documents/`, update `policy_service/sources.json` with accurate source metadata and validity notes, then restart the Policy Service. It rebuilds the index at startup. Files listed under `retained_not_indexed` remain on disk but are not included in retrieval.
 - Individual unreadable or missing PDFs are skipped and reported as warnings if other documents can be indexed. If no PDF text can be extracted, startup fails and health is unavailable.
 
+## Phase 10: city tourism news
+
+The local News Service searches Tavily for tourism news about the five cities in `news_service/config.json` (Shimla, Manali, Jaipur, Agra, and Udaipur). It stores article titles, short excerpts, publication dates, and original source URLs in the file-backed SQLite database `news_service/data/news.sqlite3`. The database can be browsed in VS Code with a SQLite viewer extension.
+
+Each startup searches the previous twelve completed calendar months in four consecutive three-month windows, plus the latest window from one year earlier for comparison. On 1 November 2026, those windows are November 2025–January 2026, February–April 2026, May–July 2026, August–October 2026, and the comparison August–October 2025. The service makes 25 basic searches per successful refresh (five cities times five windows), with up to ten results per search. Tavily's free plan provides 1,000 credits per month; basic searches cost one credit and the free key does not require a credit card. Search access requires a Tavily API key. Keep it server-side in `.env` as `TAVILY_API_KEY`; do not commit it.
+
+Start the News Service in its own terminal:
+
+```sh
+.venv/bin/python -m news_service.server
+```
+
+The service binds to `127.0.0.1:8003` by default. Readiness and refresh state are available at [http://127.0.0.1:8003/health](http://127.0.0.1:8003/health). The app calls `GET /api/v1/news?city=Shimla`; its service URL defaults to `http://127.0.0.1:8003` and can be overridden with `DAYTRIP_NEWS_URL`.
+
+The collapsible **Tourism news** panel uses the planner's destination field. For configured cities it shows the latest completed three-month window and the same months one year earlier; the selected trip date does not change the period. Unsupported destinations leave the panel empty. If Tavily fails during startup, the service keeps and serves the last complete database snapshot. A first refresh failure leaves the service unavailable until a refresh succeeds.
+
 ## Run Daytrip
 
-The planner requires Python 3.10 or newer and the dependencies above. Copy `.env.example` to `.env` and set `GROQ_API_KEY` and `OPENTRIPMAP_API_KEY` for itinerary planning. Then run:
+The planner requires Python 3.10 or newer and the dependencies above. Copy `.env.example` to `.env` and set `GROQ_API_KEY` and `OPENTRIPMAP_API_KEY` for itinerary planning. Add `TAVILY_API_KEY` to enable Phase 10 tourism news. Then run:
 
 ```sh
 .venv/bin/streamlit run app.py

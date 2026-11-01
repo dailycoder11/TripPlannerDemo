@@ -2,6 +2,7 @@
 logs/*
 !logs/.gitkeep
 booking_service/bookings.json
+news_service/data/*.sqlite3
 __pycache__/
 *.py[cod]
 .venv/
