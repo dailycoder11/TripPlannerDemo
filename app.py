@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import html
 import logging
 import os
+import requests
 import time
 import uuid
 from datetime import date, datetime, time as day_time
@@ -29,6 +31,7 @@ from config.settings import ROOT_DIR, load_settings
 load_dotenv(ROOT_DIR / ".env")
 SETTINGS = load_settings()
 BOOKING_SERVICE_URL = os.getenv("DAYTRIP_BOOKING_URL", SETTINGS.get("bookingServiceUrl", "http://127.0.0.1:8001")).rstrip("/")
+POLICY_SERVICE_URL = os.getenv("DAYTRIP_POLICY_URL", SETTINGS.get("policyServiceUrl", "http://127.0.0.1:8002")).rstrip("/")
 LOG_PATH = (ROOT_DIR / SETTINGS.get("logFile", "logs/invocations.jsonl")).resolve()
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -52,6 +55,107 @@ MEMORY_DIR = ROOT_DIR / "memory"
 def log_invocation(record: dict[str, Any]) -> None:
     """Append one structured invocation record to the configured JSONL file."""
     LOGGER.info(json.dumps(record, ensure_ascii=False, default=str))
+
+
+def render_policy_chat() -> None:
+    """Render policy search in the sidebar without touching trip form state."""
+    if "policy_chat_messages" not in st.session_state:
+        st.session_state["policy_chat_messages"] = []
+
+    with st.sidebar:
+        st.subheader("Ask about policy")
+        st.caption(
+            "Search saved travel-company and public policy sources. This panel is separate from planning and returns cited passages."
+        )
+        with st.form("policy_question_form", clear_on_submit=True):
+            question = st.text_input(
+                "Your policy question",
+                max_chars=1200,
+                placeholder="When can an IRCTC ticket be cancelled?",
+            )
+            submitted = st.form_submit_button("Search policy sources", use_container_width=True)
+
+        if submitted:
+            clean_question = question.strip()
+            if not clean_question:
+                st.warning("Enter a policy question to search the saved documents.")
+            else:
+                st.session_state["policy_chat_messages"].append({"role": "user", "content": clean_question})
+                try:
+                    response = requests.post(
+                        f"{POLICY_SERVICE_URL}/api/v1/ask",
+                        json={"question": clean_question},
+                        timeout=30,
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    if (
+                        not isinstance(result, dict)
+                        or result.get("match_status") not in {"found", "no_match"}
+                        or not isinstance(result.get("matches"), list)
+                    ):
+                        raise ValueError("unexpected policy response shape")
+                    st.session_state["policy_chat_messages"].append({"role": "assistant", "result": result})
+                except requests.RequestException as exc:
+                    st.session_state["policy_chat_messages"].append({
+                        "role": "assistant",
+                        "error": (
+                            "The policy service is unavailable or still building its local index. "
+                            "Start it with `.venv/bin/python -m policy_service.server` and try again."
+                        ),
+                    })
+                    print(f"[POLICY] service request failed: {type(exc).__name__}")
+                except (ValueError, TypeError) as exc:
+                    st.session_state["policy_chat_messages"].append({
+                        "role": "assistant",
+                        "error": "The policy service returned an invalid response. Try again after restarting it.",
+                    })
+                    print(f"[POLICY] invalid response: {type(exc).__name__}")
+
+        for message_index, message in enumerate(st.session_state["policy_chat_messages"]):
+            with st.chat_message(message["role"]):
+                if message["role"] == "user":
+                    st.write(message["content"])
+                    continue
+                if message.get("error"):
+                    st.info(message["error"])
+                    continue
+                result = message.get("result", {})
+                if result.get("match_status") == "no_match":
+                    st.info("No sufficiently similar passages were found in the local policy documents.")
+                    continue
+                st.caption("Top matching passages. Similarity is a retrieval score, not a probability of correctness.")
+                for match_index, match in enumerate(result.get("matches", [])):
+                    title = html.escape(str(match.get("document_title", "Policy document")))
+                    issuer = html.escape(str(match.get("issuer", "Unknown issuer")))
+                    excerpt = html.escape(str(match.get("excerpt", ""))).replace("\n", "<br>")
+                    st.markdown(
+                        f'<div style="background:#f1f5ed;color:#202a22;border:1px solid #d8e2d3;'
+                        f'border-radius:8px;padding:12px 14px;margin:8px 0 4px;line-height:1.55">'
+                        f'<strong style="color:#1f3d2b">{title}</strong><br>'
+                        f'<span style="color:#46554a;font-size:0.88rem">{issuer}</span><br><br>'
+                        f'<span style="color:#202a22;white-space:normal">{excerpt}</span></div>',
+                        unsafe_allow_html=True,
+                    )
+                    score = match.get("similarity_score")
+                    if isinstance(score, (int, float)):
+                        st.caption(f"Confidence (similarity): {score:.3f} · retrieval score, not probability")
+                    st.caption(
+                        f"Page {', '.join(map(str, match.get('page_numbers', [])))} · "
+                        f"Published: {match.get('published_date') or 'not listed'} · "
+                        f"Effective: {match.get('effective_date') or 'see source'}"
+                    )
+                    validity_note = match.get("validity_note")
+                    if validity_note:
+                        st.caption(validity_note)
+                    source_url = match.get("source_url")
+                    if source_url:
+                        st.link_button(
+                            "Open source document",
+                            source_url,
+                            key=f"policy-source-{message_index}-{match_index}",
+                        )
+                    st.divider()
 
 
 def build_itinerary(
@@ -404,7 +508,7 @@ st.set_page_config(
     page_title=f"{SETTINGS.get('appName', 'Daytrip')} — a day well planned",
     page_icon="✳",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 st.markdown(
@@ -446,6 +550,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+render_policy_chat()
 
 st.markdown(
     '<div class="topline"><div class="brand"><span class="brand-mark">d</span>daytrip<span style="color:#d48b59">.</span></div><div>✳ &nbsp; Your next good day starts here</div></div>',

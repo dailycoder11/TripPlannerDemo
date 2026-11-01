@@ -1,0 +1,11 @@
+{
+  "host": "127.0.0.1",
+  "port": 8002,
+  "manifestFile": "sources.json",
+  "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+  "device": "cpu",
+  "chunkCharacters": 1200,
+  "chunkOverlapCharacters": 180,
+  "resultLimit": 2,
+  "minimumSimilarity": 0.22
+}

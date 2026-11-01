@@ -1,0 +1,124 @@
+{
+  "retrieved_at": "2026-11-01",
+  "collection_note": "Selected official travel sources and first-party travel-company policy snapshots for policy search. Company policies are not Daytrip commitments; they may change and booking-specific supplier terms can control.",
+  "retained_not_indexed": [
+    {
+      "filename": "dpdp_rules_2025.pdf",
+      "reason": "Bilingual regulatory rules set aside from the active corpus to prioritize first-party travel-company policies; retained on disk."
+    },
+    {
+      "filename": "dpdp_rules_corrigendum_2025.pdf",
+      "reason": "Related bilingual corrigendum set aside with the 2025 Rules; retained on disk."
+    }
+  ],
+  "documents": [
+    {
+      "id": "daytrip-planner-product-policy-guide-2026",
+      "filename": "daytrip_planner_policy_guide_2026.pdf",
+      "title": "Daytrip Planner: Product Policy and Responsible Use Guide",
+      "issuer": "Daytrip project",
+      "category": "product_policy",
+      "family": "Daytrip Planner product guidance",
+      "source_url": "",
+      "published_date": "2026-11-01",
+      "effective_date": null,
+      "validity_note": "Internal product guidance summarizing cited official sources; recommendations are not legal advice or a compliance assessment. Review source versions and legal applicability before production use."
+    },
+    {
+      "id": "irctc-refund-cancellation-rules",
+      "filename": "irctc_refund_cancellation_rules.pdf",
+      "title": "Refund and Cancellation Rules for IRCTC Trains",
+      "issuer": "Indian Railway Catering and Tourism Corporation (IRCTC)",
+      "category": "travel",
+      "family": "Indian Railways ticket refunds",
+      "source_url": "https://contents.irctc.co.in/en/RefundCancellationRules.pdf",
+      "published_date": null,
+      "effective_date": null,
+      "validity_note": "Check the official IRCTC source for current updates before relying on time-sensitive fares or cancellation rules."
+    },
+    {
+      "id": "asi-protected-monuments-rules-1959",
+      "filename": "asi_protected_monuments_rules_1959.pdf",
+      "title": "Ancient Monuments and Archaeological Sites and Remains Rules, 1959",
+      "issuer": "Archaeological Survey of India",
+      "category": "travel",
+      "family": "Protected monument visitor rules",
+      "source_url": "https://asi.nic.in/pdf/actRules1959.pdf",
+      "published_date": "1959",
+      "effective_date": null,
+      "validity_note": "This is the 1959 rules text; check the issuing authority for amendments and site-specific instructions."
+    },
+    {
+      "id": "dpdp-act-2023",
+      "filename": "dpdp_act_2023.pdf",
+      "title": "Digital Personal Data Protection Act, 2023",
+      "issuer": "Ministry of Electronics and Information Technology / Government of India",
+      "category": "digital_service",
+      "family": "Digital personal data protection",
+      "source_url": "https://www.meity.gov.in/static/uploads/2024/06/2bf1f0e9f04e6fb4f8fef35e82c42aa5.pdf",
+      "published_date": "2023-08-11",
+      "effective_date": null,
+      "validity_note": "The Act has phased commencement; this source excerpt alone does not establish which provisions are in force."
+    },
+    {
+      "id": "goibibo-terms-and-conditions-2026-snapshot",
+      "filename": "goibibo_terms_snapshot_2026-11.pdf",
+      "title": "Goibibo Terms and Conditions (source-page snapshot)",
+      "issuer": "Goibibo / MakeMyTrip (India) Limited",
+      "category": "company_policy",
+      "family": "Travel booking terms, suppliers, cancellations and refunds",
+      "source_url": "https://www.goibibo.com/info/terms-and-conditions/",
+      "published_date": null,
+      "effective_date": null,
+      "validity_note": "Local print-rendered snapshot captured 2026-11-01. Flight, hotel, bus, cab and activity terms vary by supplier and booking; check the current source page and booking voucher."
+    },
+    {
+      "id": "goibibo-privacy-policy-2026-snapshot",
+      "filename": "goibibo_privacy_policy_snapshot_2026-11.pdf",
+      "title": "Goibibo Privacy Policy (source-page snapshot)",
+      "issuer": "Goibibo / MakeMyTrip (India) Limited",
+      "category": "company_policy",
+      "family": "Travel-platform privacy practices",
+      "source_url": "https://www.goibibo.com/info/privacy/",
+      "published_date": null,
+      "effective_date": null,
+      "validity_note": "Local print-rendered snapshot captured 2026-11-01. Company privacy practices can change; consult the current source page. This is not Daytrip's privacy policy."
+    },
+    {
+      "id": "redbus-terms-of-service-2026-snapshot",
+      "filename": "redbus_terms_of_service_snapshot_2026-11.pdf",
+      "title": "redBus Terms of Service (source-page snapshot)",
+      "issuer": "redBus / MakeMyTrip (India) Limited",
+      "category": "company_policy",
+      "family": "Bus, vehicle and train ticketing terms",
+      "source_url": "https://www.redbus.in/info/termscondition",
+      "published_date": null,
+      "effective_date": null,
+      "validity_note": "Local print-rendered snapshot captured 2026-11-01. Ticket rules can vary by operator and booking; verify the current source page and ticket details."
+    },
+    {
+      "id": "redbus-privacy-policy-2026-snapshot",
+      "filename": "redbus_privacy_policy_snapshot_2026-11.pdf",
+      "title": "redBus Privacy Policy (source-page snapshot)",
+      "issuer": "redBus / MakeMyTrip (India) Limited",
+      "category": "company_policy",
+      "family": "Travel-platform privacy practices",
+      "source_url": "https://www.redbus.in/info/privacypolicy",
+      "published_date": null,
+      "effective_date": null,
+      "validity_note": "Local print-rendered snapshot captured 2026-11-01. Company privacy practices can change; consult the current source page. This is not Daytrip's privacy policy."
+    },
+    {
+      "id": "redbus-booking-faq-2026-snapshot",
+      "filename": "redbus_booking_faq_snapshot_2026-11.pdf",
+      "title": "redBus Booking, Cancellation and Refund FAQs (source-page snapshot)",
+      "issuer": "redBus / MakeMyTrip (India) Limited",
+      "category": "company_policy",
+      "family": "Bus-ticket cancellations and refunds",
+      "source_url": "https://www.redbus.in/info/faq",
+      "published_date": null,
+      "effective_date": null,
+      "validity_note": "Local print-rendered FAQ snapshot captured 2026-11-01. Cancellation and refund terms vary by bus operator and ticket; check the current source page and ticket details."
+    }
+  ]
+}

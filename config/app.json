@@ -13,5 +13,6 @@
   "maxToolSteps": 3,
   "rateLimitRetryDelaySeconds": 30,
   "maxRateLimitRetries": 1,
-  "bookingServiceUrl": "http://127.0.0.1:8001"
+  "bookingServiceUrl": "http://127.0.0.1:8001",
+  "policyServiceUrl": "http://127.0.0.1:8002"
 }
