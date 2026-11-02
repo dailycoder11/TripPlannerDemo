@@ -30,6 +30,20 @@ Daytrip and the dummy ticket-booking agent run as separate processes. Both read 
 
 The A2A endpoint defaults to `http://127.0.0.1:8001`; change `bookingServiceUrl` in `config/app.json` or set `DAYTRIP_BOOKING_URL` for Daytrip. The service host, port, model, JSON storage path, and minimum policy values live in `booking_service/config.json`. Its local JSON file is `booking_service/bookings.json` and is ignored by Git.
 
+### A2A in this demo
+
+A2A (Agent2Agent) is a protocol for agents to discover one another and exchange structured tasks and results. Daytrip reads the booking agent card, sends a JSON data message as a task to the agent's JSON-RPC endpoint, and reads the task result artifact. Here, the booking agent returns a confirmation, a proposal for user approval, or a failure. The agent card advertises the agent's identity, endpoint, capabilities, and skills; it is the discovery document for the services this agent exposes.
+
+With the default local address, these URLs are useful:
+
+- `http://127.0.0.1:8001/.well-known/agent-card.json` — A2A agent card: advertised skills, interface, and supported input/output modes.
+- `http://127.0.0.1:8001/` — A2A JSON-RPC endpoint used to send tasks; this is a protocol endpoint, not a webpage for browsing services.
+- `http://127.0.0.1:8001/docs` — interactive FastAPI endpoint documentation.
+- `http://127.0.0.1:8001/openapi.json` — FastAPI's OpenAPI schema for the HTTP routes.
+- `http://127.0.0.1:8001/redoc` — alternate view of the OpenAPI schema.
+
+The agent card describes the booking skill and includes an example input. The OpenAPI schema describes the HTTP routes; the A2A task's JSON data fields are documented above (`request_id`, `event_name`, `event_date`, `attendee_count`, and `amount_per_person_inr`).
+
 The booking service writes one JSON log record per processed A2A task to its process output. Each record includes the task ID, final status, confirmation ID when present, and all five defined request parameters; credentials are excluded.
 
 Booking requests travel as an A2A task with a JSON data artifact containing `request_id`, `event_name`, `event_date`, `attendee_count`, and `amount_per_person_inr`. The result artifact has `status` set to `confirmed`, `proposal`, or `failed`. Confirmations include a dummy confirmation ID and total; proposals include the original request, suggested attendee count and amount per person, and an explanation. Daytrip asks the user to accept or decline a proposal. Acceptance sends a new A2A task; the booking service validates it again before creating any dummy booking.
