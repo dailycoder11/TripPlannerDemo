@@ -92,6 +92,12 @@ def review_plan(
         error_text = f"{type(exc).__name__}: {exc}"
         if response_data:
             call_status = "invalid_response"
+        diagnostic = error_text
+        if api_key:
+            diagnostic = diagnostic.replace(api_key, "[redacted]")
+        if len(diagnostic) > 300:
+            diagnostic = diagnostic[:300] + "...<truncated>"
+        print(f"[CRITIC] unavailable ({call_status}): {diagnostic}")
     finally:
         log_invocation({
             "timestamp": datetime.now().astimezone().isoformat(),

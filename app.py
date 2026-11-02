@@ -631,8 +631,6 @@ if submitted:
                         critic_feedback = None
                     if critic_feedback:
                         print("[CRITIC] review completed")
-                    else:
-                        print("[CRITIC] review unavailable")
             st.session_state["critic_feedback"] = critic_feedback
             st.session_state["itinerary"] = itinerary
             st.session_state["evaluation"] = evaluation
