@@ -50,6 +50,59 @@ def log_invocation(record: dict[str, Any]) -> None:
     LOGGER.info(json.dumps(record, ensure_ascii=False, default=str))
 
 
+def format_harness_arguments(arguments: Any, *, max_length: int = 500) -> str:
+    """Format bounded parsed tool arguments for actionable console diagnostics."""
+    if not isinstance(arguments, dict):
+        return "<unavailable: arguments were not a JSON object>"
+    formatted = json.dumps(arguments, ensure_ascii=False, default=str, sort_keys=True)
+    if len(formatted) > max_length:
+        return formatted[:max_length] + "...<truncated>"
+    return formatted
+
+
+def describe_harness_rejection(
+    rejection: str,
+    name: str,
+    arguments: Any,
+    harness: ToolCallHarness,
+) -> str:
+    """Explain a harness rejection with the relevant validation context."""
+    if rejection == WEATHER_DATE_REJECTION:
+        requested = arguments.get("trip_date") if isinstance(arguments, dict) else None
+        try:
+            requested_date = date.fromisoformat(requested) if isinstance(requested, str) else requested
+            if not isinstance(requested_date, date):
+                requested_date = None
+        except (TypeError, ValueError):
+            requested_date = None
+        if requested is None:
+            reason = "weather trip_date is missing"
+        elif requested_date is None:
+            reason = f"weather trip_date is invalid ({requested!r}); expected YYYY-MM-DD"
+        elif not harness.trip_start_date <= requested_date <= harness.trip_end_date:
+            reason = f"weather trip_date {requested_date} is outside the allowed range"
+        else:
+            reason = "weather trip_date failed validation"
+        reason += f" {harness.trip_start_date} through {harness.trip_end_date}"
+    elif rejection == "duplicate request":
+        reason = "an equivalent request already completed"
+    elif rejection == "tool-call limit reached":
+        reason = (
+            f"successful tool-call limit reached "
+            f"({harness.successful_call_count}/{harness.max_successful_calls})"
+        )
+    elif rejection.startswith("Invalid tool arguments:"):
+        reason = rejection
+    elif rejection == "Tool is not available.":
+        reason = "tool name is not in the allowed tool set"
+    else:
+        reason = rejection
+    return (
+        f"[HARNESS] BLOCKED - tool={name!r}; reason={reason}; "
+        f"arguments={format_harness_arguments(arguments)}"
+    )
+
+
 def build_itinerary(
     *,
     destination: str,
@@ -255,32 +308,32 @@ def build_itinerary(
                 try:
                     parsed_for_trace = json.loads(arguments) if isinstance(arguments, str) else arguments
                 except (TypeError, ValueError):
-                    parsed_for_trace = {}
+                    parsed_for_trace = None
                 requested_date = parsed_for_trace.get("trip_date") if isinstance(parsed_for_trace, dict) else None
                 suffix = f": {requested_date}" if name == "get_weather" and requested_date else ""
                 print(f"[LLM] requested {name}{suffix}")
 
                 if not tools_enabled:
                     tool_result = {"error": TOOL_LIMIT_MESSAGE}
-                    print("[HARNESS] BLOCKED - tool-call limit reached")
+                    print(
+                        f"[HARNESS] BLOCKED - tool={name!r}; "
+                        f"reason=tools disabled after the successful-call limit "
+                        f"({harness.successful_call_count}/{harness.max_successful_calls}); "
+                        f"arguments={format_harness_arguments(parsed_for_trace)}"
+                    )
                     limit_reached_this_turn = True
                 else:
                     parsed, signature, rejection = harness.validate(name, arguments)
                     if rejection:
+                        print(describe_harness_rejection(rejection, name, parsed_for_trace, harness))
                         if rejection == "duplicate request":
                             tool_result = {"error": "This identical tool request has already completed. Choose a different request or continue with the information available."}
-                            print("[HARNESS] BLOCKED - duplicate request")
                         elif rejection == "tool-call limit reached":
                             tool_result = {"error": TOOL_LIMIT_MESSAGE}
-                            print("[HARNESS] BLOCKED - tool-call limit reached")
                             tools_enabled = False
                             limit_reached_this_turn = True
                         else:
                             tool_result = {"error": rejection}
-                            if rejection == WEATHER_DATE_REJECTION:
-                                print("[HARNESS] BLOCKED - date outside trip range")
-                            else:
-                                print(f"[HARNESS] BLOCKED - {rejection}")
                     else:
                         print("[HARNESS] ALLOWED")
                         tool_result, succeeded = harness.execute_validated(name, parsed or {}, signature or "")
