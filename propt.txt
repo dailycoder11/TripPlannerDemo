@@ -1,65 +1,49 @@
-I already have Phase 4 working with deterministic evals and one revision loop.
+I have Phase 5 of the Daytrip planner working. Phase 5 includes the existing Streamlit trip-planning flow, native Groq tool calls for attraction/weather/routing data, deterministic itinerary evaluation with a bounded revision loop, and simple JSON-file memory that reuses and saves successful plans.
 
-Now add **Phase 5: simple file-based memory**.
+Implement **Phase 6: critic-assisted planning** on top of Phase 5. Preserve all Phase 5 behavior unless a change is required to pass the final validated plan and its supporting facts to the critic.
 
-Create a `memory/` folder. Store each successful trip plan as one JSON file.
+## Goal
 
-Only save plans whose final eval status is `PASS`.
+After the main planner has produced a structured itinerary that passes the deterministic evaluator, make one separate LLM call to review that itinerary. The critic should assess practical quality and offer a concise assessment with up to three suggestions. Its role is advisory: it must not rewrite or replace the itinerary, call tools, or override deterministic evaluation. A critic failure must never hide or invalidate an itinerary that already passed evaluation.
 
-Each memory file should contain at least:
+## Critic implementation
 
-- destination
-- trip date
-- budget per person
-- number of people
-- start time
-- end time
-- created time
-- eval status
-- final structured plan
+1. Add `agents/critic.py` with a `review_plan` function and a dedicated critic system prompt.
+2. The critic receives a JSON payload containing:
+   - original trip requirements (destination, trip date, group size, per-person budget, currency, start and end times);
+   - the final structured itinerary that passed evaluation;
+   - successful tool facts gathered by the planner (attractions, weather, and travel results).
+3. The critic makes exactly one Groq chat completion request, with no tools and JSON object response formatting. Configure the critic model separately from the planner model. Keep its token count and temperature configurable.
+4. Require a JSON object with `overall_feedback` (non-empty string) and `suggestions` (array of strings, at most three after normalization). Reject malformed responses as unavailable feedback.
+5. The prompt must direct the critic to base feedback only on supplied data, avoid duplicating deterministic validation, consider pacing, travel burden, meal timing, variety, weather use, and group suitability, and say the plan is good when there are no useful changes to suggest. It must not invent issues.
 
-Before running the normal planner, search existing memory files.
+## Integration and behavior
 
-A previous plan can be reused if:
+- Run the critic only for a newly generated itinerary that parses as structured JSON and passes the deterministic evaluator (`PASS`). Do not call it for failed evaluations, malformed plans, or a plan reused directly from Phase 5 memory.
+- Keep the deterministic evaluator and its revision loop as the authority for hard requirements such as valid structure, requested time window, date, and budget. Critic feedback does not alter the itinerary or its evaluation status.
+- Preserve successful planner tool results as facts, and pass those facts to the critic with the original request and final validated plan.
+- Respect the configured maximum LLM calls per request. Skip the critic if the planner has already used the request's call allowance; account for the critic call in invocation metadata/logging.
+- Treat provider errors, timeouts, invalid JSON, and schema errors as critic-unavailable outcomes. Continue showing the validated itinerary in every such case.
+- Display the critic's overall feedback and suggestions beneath the itinerary. When feedback is unavailable, show a small neutral unavailable message.
+- Continue saving/reusing plans according to Phase 5 memory rules; critic feedback is not a replacement for the final plan.
 
-- destination/city matches,
-- trip date is within ±30 days of the requested trip date,
-- budget per person is within ±₹500.
+## Configuration, logs, and safeguards
 
-If multiple plans match, choose the closest by date, then budget.
+- Add a `criticModel` setting (default `openai/gpt-oss-20b`) while retaining the existing planner model setting.
+- Allow `criticMaxTokens` and `criticTemperature` settings, with safe defaults if omitted (for example 600 and 0.2).
+- Log the critic request and full provider response using the existing invocation JSONL logger. Identify the model, call index, status, duration, messages, no-tools choice, response format, token limit, and temperature. Keep API keys out of logs.
+- Give critic calls the same invocation ID as the planner request and a call index that follows planner calls. Log and surface clear statuses for completed, skipped, invalid, and unavailable reviews without exposing secrets.
+- Keep the existing tool-call limits, retry behavior, provider configuration, and API logging intact.
 
-If a reusable memory is found:
-- skip LLM/tool planning,
-- load the stored final structured plan,
-- show that plan to the user,
-- log that memory was reused.
+## Acceptance criteria
 
-If no memory matches:
-- run the existing Phase 4 flow normally,
-- after a successful PASS result, save the final plan as a new JSON memory file.
+- A new, valid PASS itinerary triggers one critic request and renders feedback/suggestions.
+- A failed or unparseable itinerary does not trigger the critic.
+- A memory-reused itinerary does not trigger the critic.
+- Critic errors or invalid output leave the validated itinerary visible and its evaluation as PASS.
+- The critic has no tools and cannot modify the final plan.
+- The critic is skipped when the configured request call limit has already been reached.
+- Existing Phase 5 deterministic evaluation and memory behavior remain available.
+- Update `README.md` to describe Phase 6, the critic's advisory role and execution conditions, configuration, logs, and local setup.
 
-Example logs:
-
-```text
-[MEMORY] searching previous plans
-[MEMORY] match found: bengaluru_2026-11-15_1000.json
-[MEMORY] reusing validated plan
-```
-
-or:
-
-```text
-[MEMORY] no suitable match
-[PLANNER] running normal flow
-[EVAL] PASS
-[MEMORY] saved new trip plan
-```
-
-Keep this simple:
-- no vector DB
-- no embeddings
-- no LLM-based memory search
-- no summarization
-- no multiple agents
-
-Before coding, briefly show files to add/modify and where memory lookup/save fits into the current flow.
+Before coding, briefly identify the files to add or modify and where the critic call fits in the request flow.
