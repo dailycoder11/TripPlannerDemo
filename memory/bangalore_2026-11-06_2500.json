@@ -1,0 +1,108 @@
+{
+  "destination": "Bangalore",
+  "trip_date": "2026-11-06",
+  "budget_per_person": 2500.0,
+  "number_of_people": 2,
+  "start_time": "09:00",
+  "end_time": "19:00",
+  "created_time": "2026-11-06T03:52:55.246637+00:00",
+  "eval_status": "PASS",
+  "evaluation": {
+    "status": "PASS",
+    "checks": {
+      "format": "PASS",
+      "budget": "PASS",
+      "activity_count": "PASS",
+      "activity_dates": "PASS",
+      "start_time": "PASS",
+      "end_time": "PASS",
+      "meal": "PASS"
+    },
+    "failures": []
+  },
+  "final_plan": {
+    "cost_per_person": 1350,
+    "activities": [
+      {
+        "date": "2026-11-06",
+        "start_time": "09:00",
+        "end_time": "10:30",
+        "title": "Morning walk in Cubbon Park",
+        "category": "activity",
+        "description": "Start the day with a leisurely stroll through Cubbon Park’s lush greenery, historic statues and walking trails. Free entry."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "10:30",
+        "end_time": "11:00",
+        "title": "Travel to Visvesvaraya Industrial & Technological Museum",
+        "category": "activity",
+        "description": "Short auto‑rickshaw ride (≈4 km, ~4 min). Estimated cost: INR 100 per person."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "11:00",
+        "end_time": "12:30",
+        "title": "Visvesvaraya Industrial & Technological Museum (VITM)",
+        "category": "activity",
+        "description": "Explore interactive science exhibits, a planetarium and a mini‑science park. Entry fee approx. INR 150 per adult."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "12:30",
+        "end_time": "13:00",
+        "title": "Travel to lunch at a local restaurant (e.g., MTR or Koshy’s)",
+        "category": "activity",
+        "description": "Auto‑rickshaw ride (≈3 km). Estimated cost: INR 100 per person."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "13:00",
+        "end_time": "14:30",
+        "title": "Lunch – South Indian cuisine",
+        "category": "meal",
+        "description": "Enjoy a set lunch of dosas, idlis, rice, sambar and a beverage at a mid‑range restaurant. Approx. INR 400 per person."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "14:30",
+        "end_time": "15:00",
+        "title": "Travel to Venkatappa Art Gallery",
+        "category": "activity",
+        "description": "Auto‑rickshaw ride (≈2 km). Estimated cost: INR 100 per person."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "15:00",
+        "end_time": "16:30",
+        "title": "Venkatappa Art Gallery",
+        "category": "activity",
+        "description": "View a collection of modern Indian paintings, sculptures and temporary exhibitions. Free entry."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "16:30",
+        "end_time": "17:00",
+        "title": "Travel to Bangalore Palace",
+        "category": "activity",
+        "description": "Auto‑rickshaw or rideshare (≈5 km, ~15 min). Estimated cost: INR 150 per person."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "17:00",
+        "end_time": "18:30",
+        "title": "Bangalore Palace (grounds & interior tour)",
+        "category": "activity",
+        "description": "Explore the Tudor‑style palace, its gardens and the royal interiors. Entry fee approx. INR 200 per adult."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "18:30",
+        "end_time": "19:00",
+        "title": "Return to starting point / end of day",
+        "category": "activity",
+        "description": "Final auto‑rickshaw ride back to your accommodation or central location. Estimated cost: INR 150 per person."
+      }
+    ]
+  }
+}

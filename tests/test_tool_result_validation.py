@@ -4,7 +4,7 @@ import unittest
 from datetime import date
 from unittest.mock import patch
 
-from tools.harness import ToolCallHarness
+from tools.harness import ToolCallHarness, TOOL_ALREADY_USED_MESSAGE
 from tools.result_validation import (
     ToolResultRejected,
     WEATHER_CODES,
@@ -129,7 +129,33 @@ class ToolResultValidationTests(unittest.TestCase):
         self.assertTrue(succeeded)
         self.assertEqual(result[0]["name"], "City Museum")
         _, _, rejection = self.harness.validate("search_attractions", {"place": "Mumbai South"})
-        self.assertEqual(rejection, "This tool has already been used for this trip request.")
+        self.assertEqual(rejection, TOOL_ALREADY_USED_MESSAGE)
+
+    def test_manali_repeat_is_a_usage_rejection_and_other_tools_remain_available(self):
+        parsed, signature, rejection = self.harness.validate(
+            "search_attractions", {"place": "Manali", "limit": 6}
+        )
+        self.assertIsNone(rejection)
+        with patch("tools.harness.dispatch_tool", return_value=[]):
+            self.harness.execute_validated("search_attractions", parsed, signature)
+        parsed, signature, rejection = self.harness.validate(
+            "search_attractions", {"place": "Manali, Himachal Pradesh", "limit": 10}
+        )
+        self.assertIsNone(parsed)
+        self.assertIsNone(signature)
+        self.assertEqual(rejection, TOOL_ALREADY_USED_MESSAGE)
+        self.assertEqual(self.harness.successful_call_count, 1)
+        _, _, rejection = self.harness.validate(
+            "get_weather", {"city": "Manali", "trip_date": "2026-10-31"}
+        )
+        self.assertIsNone(rejection)
+
+    def test_unsafe_repeat_still_fails_argument_validation(self):
+        self.harness.used_tools.add("search_attractions")
+        _, _, rejection = self.harness.validate(
+            "search_attractions", {"place": "Manali", "limit": 11}
+        )
+        self.assertEqual(rejection, "Tool arguments failed safety validation.")
 
     def test_route_coordinates_cannot_conflict_with_attraction_result(self):
         parsed, signature, rejection = self.harness.validate("search_attractions", {"place": "Mumbai"})

@@ -1,0 +1,60 @@
+{
+  "destination": "pune",
+  "trip_date": "2026-11-06",
+  "budget_per_person": 2500.0,
+  "number_of_people": 2,
+  "start_time": "09:00",
+  "end_time": "19:00",
+  "created_time": "2026-11-06T03:47:07.418746+00:00",
+  "eval_status": "PASS",
+  "evaluation": {
+    "status": "PASS",
+    "checks": {
+      "format": "PASS",
+      "budget": "PASS",
+      "activity_count": "PASS",
+      "activity_dates": "PASS",
+      "start_time": "PASS",
+      "end_time": "PASS",
+      "meal": "PASS"
+    },
+    "failures": []
+  },
+  "final_plan": {
+    "cost_per_person": 1000,
+    "activities": [
+      {
+        "date": "2026-11-06",
+        "start_time": "09:00",
+        "end_time": "11:30",
+        "title": "Ghorawadi (Shelarwadi) Caves",
+        "category": "activity",
+        "description": "Explore the ancient Buddhist‑Hindu rock‑cut caves about 25 km northwest of Pune. The site is free to enter (small donation of ~₹50 per person). Travel by hired car/rideshare (≈₹200 round‑trip per person)."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "12:30",
+        "end_time": "13:30",
+        "title": "Lunch at Shabree (Shivaji Nagar)",
+        "category": "meal",
+        "description": "Enjoy a popular Maharashtrian thali with roti, bhaji, dal, and dessert. Estimated cost ₹400 per person."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "14:30",
+        "end_time": "17:00",
+        "title": "Indori Fort (Induri Fort) Visit",
+        "category": "activity",
+        "description": "Drive to Indori Fort (≈35 km north of Pune). Walk the historic fort, enjoy panoramic views of the Indrayani River valley. Entry fee ~₹50 per person; transport cost included in the round‑trip car fare."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "17:30",
+        "end_time": "18:30",
+        "title": "Coffee & Light Snacks at Café Goodluck",
+        "category": "meal",
+        "description": "Relax with a cup of coffee and a snack before heading back. Approx. ₹100 per person."
+      }
+    ]
+  }
+}

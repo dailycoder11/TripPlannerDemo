@@ -1,0 +1,84 @@
+{
+  "destination": "Shimla",
+  "trip_date": "2026-11-06",
+  "budget_per_person": 2500.0,
+  "number_of_people": 2,
+  "start_time": "09:00",
+  "end_time": "19:00",
+  "created_time": "2026-11-06T03:57:00.402833+00:00",
+  "eval_status": "PASS",
+  "evaluation": {
+    "status": "PASS",
+    "checks": {
+      "format": "PASS",
+      "budget": "PASS",
+      "activity_count": "PASS",
+      "activity_dates": "PASS",
+      "start_time": "PASS",
+      "end_time": "PASS",
+      "meal": "PASS"
+    },
+    "failures": []
+  },
+  "final_plan": {
+    "cost_per_person": 1250,
+    "activities": [
+      {
+        "date": "2026-11-06",
+        "start_time": "09:00",
+        "end_time": "10:30",
+        "title": "Christ Church & Mall Road Stroll",
+        "category": "activity",
+        "description": "Begin the day with a visit to Christ Church, the iconic neo‑Gothic church on Mall Road. After exploring the interior (free entry), enjoy a leisurely walk along Mall Road, soaking in the colonial architecture and local shops."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "10:45",
+        "end_time": "12:00",
+        "title": "Kalka–Shimla Railway Heritage Walk",
+        "category": "activity",
+        "description": "Walk to the historic Kalka–Shimla Railway station (≈5 min). View the vintage locomotives and learn about the UNESCO‑listed narrow‑gauge line. No entry fee."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "12:15",
+        "end_time": "13:30",
+        "title": "Lunch – Himachali Cuisine",
+        "category": "meal",
+        "description": "Enjoy a traditional Himachali thali at a popular local eatery on Mall Road (≈₹500 per person, including a soft drink)."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "13:45",
+        "end_time": "15:15",
+        "title": "Jakhu Temple Visit",
+        "category": "activity",
+        "description": "Take a short auto‑rickshaw ride (≈3 km, 10‑15 min, ₹200 round‑trip) to Jakhu Temple, the highest point in Shimla. Explore the temple grounds and enjoy panoramic views of the city. Free entry."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "15:30",
+        "end_time": "16:30",
+        "title": "Viceregal Lodge (Rashtrapati Niwas)",
+        "category": "activity",
+        "description": "Travel by shared taxi (≈5 km, 15 min, ₹150 per person) to the Viceregal Lodge. Guided tour of the former British summer residence (entry fee ₹100 per person)."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "16:45",
+        "end_time": "18:00",
+        "title": "Afternoon Tea on Mall Road",
+        "category": "meal",
+        "description": "Return to Mall Road (≈10 min walk). Relax with tea/coffee and a snack at a café (≈₹100 per person)."
+      },
+      {
+        "date": "2026-11-06",
+        "start_time": "18:15",
+        "end_time": "19:00",
+        "title": "Leisurely End & Departure",
+        "category": "activity",
+        "description": "Free time for last‑minute shopping or photo‑ops before concluding the day trip."
+      }
+    ]
+  }
+}

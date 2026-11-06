@@ -1,0 +1,68 @@
+{
+  "destination": "hyderabad",
+  "trip_date": "2026-11-02",
+  "budget_per_person": 2500.0,
+  "number_of_people": 2,
+  "start_time": "09:00",
+  "end_time": "19:00",
+  "created_time": "2026-11-02T17:17:45.459770+00:00",
+  "eval_status": "PASS",
+  "evaluation": {
+    "status": "PASS",
+    "checks": {
+      "format": "PASS",
+      "budget": "PASS",
+      "activity_count": "PASS",
+      "activity_dates": "PASS",
+      "start_time": "PASS",
+      "end_time": "PASS",
+      "meal": "PASS"
+    },
+    "failures": []
+  },
+  "final_plan": {
+    "cost_per_person": 1050,
+    "activities": [
+      {
+        "date": "2026-11-02",
+        "start_time": "09:00",
+        "end_time": "10:30",
+        "title": "Charminar Exploration",
+        "category": "activity",
+        "description": "Visit Hyderabad's iconic Charminar, climb the minaret for city views, explore the surrounding Laad Bazaar. Entry is free; modest fee for camera use. Travel by auto‑rickshaw (≈ INR 150 round‑trip)."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "10:45",
+        "end_time": "12:30",
+        "title": "Golconda Fort",
+        "category": "activity",
+        "description": "Take a short auto‑rickshaw ride to Golconda Fort. Explore the massive citadel, acoustic chambers and panoramic vistas. Entry fee INR 250 per person."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "13:00",
+        "end_time": "14:00",
+        "title": "Lunch at Shadab Restaurant",
+        "category": "meal",
+        "description": "Enjoy a traditional Hyderabadi thali (biryani, curries, raita, dessert) at Shadab near Charminar. Estimated cost INR 400 per person."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "14:30",
+        "end_time": "16:00",
+        "title": "Public Gardens (Bagh‑e‑Aam)",
+        "category": "activity",
+        "description": "Relax in the historic Public Gardens, stroll among old trees, fountains and the State Museum annex. Free entry; perfect for a light walk after lunch."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "16:30",
+        "end_time": "17:30",
+        "title": "Coffee & Snacks at Café Niloufer",
+        "category": "meal",
+        "description": "Wrap up the day with a cup of Irani chai and a small snack. Approx. INR 100 per person."
+      }
+    ]
+  }
+}

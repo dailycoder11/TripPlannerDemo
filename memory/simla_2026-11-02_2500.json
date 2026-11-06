@@ -1,0 +1,92 @@
+{
+  "destination": "Simla",
+  "trip_date": "2026-11-02",
+  "budget_per_person": 2500.0,
+  "number_of_people": 2,
+  "start_time": "09:00",
+  "end_time": "19:00",
+  "created_time": "2026-11-02T17:11:47.056669+00:00",
+  "eval_status": "PASS",
+  "evaluation": {
+    "status": "PASS",
+    "checks": {
+      "format": "PASS",
+      "budget": "PASS",
+      "activity_count": "PASS",
+      "activity_dates": "PASS",
+      "start_time": "PASS",
+      "end_time": "PASS",
+      "meal": "PASS"
+    },
+    "failures": []
+  },
+  "final_plan": {
+    "cost_per_person": 1000,
+    "activities": [
+      {
+        "date": "2026-11-02",
+        "start_time": "09:00",
+        "end_time": "10:30",
+        "title": "Stroll Mall Road & The Ridge",
+        "category": "activity",
+        "description": "Start the day with a leisurely walk along Mall Road, enjoy the colonial architecture, and soak up views from The Ridge. Free activity; light walking."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "10:30",
+        "end_time": "12:00",
+        "title": "Himachal Pradesh State Museum",
+        "category": "activity",
+        "description": "Explore the museum’s collection of regional art, artifacts, and history. Entry fee approx. INR 20 per person."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "12:00",
+        "end_time": "13:30",
+        "title": "Lunch at Café Sol (Mall Road)",
+        "category": "meal",
+        "description": "Enjoy a hearty Himachali‑influenced lunch with dishes like Chana Madra and Momos. Estimated cost INR 350 per person."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "13:30",
+        "end_time": "15:00",
+        "title": "Jakhu Temple Visit",
+        "category": "activity",
+        "description": "Take a short auto‑rickshaw ride (≈15 min) to Jakhu Temple, climb to the giant Hanuman statue and enjoy panoramic views. No entry fee."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "15:00",
+        "end_time": "15:30",
+        "title": "Tea & Snacks at Jakhu Café",
+        "category": "meal",
+        "description": "Warm up with tea/coffee and light snacks. Estimated cost INR 100 per person."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "15:30",
+        "end_time": "16:30",
+        "title": "Christ Church & Mall Road Shopping",
+        "category": "activity",
+        "description": "Return to Mall Road, visit the historic Christ Church (free) and browse local shops for souvenirs."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "16:30",
+        "end_time": "18:00",
+        "title": "Rashtrapati Niwas (Viceregal Lodge)",
+        "category": "activity",
+        "description": "Drive to the Viceregal Lodge, explore its gardens and museum. Entry fee approx. INR 30 per person."
+      },
+      {
+        "date": "2026-11-02",
+        "start_time": "18:00",
+        "end_time": "19:00",
+        "title": "Return to Hotel / Evening Rest",
+        "category": "activity",
+        "description": "Head back to the hotel, unwind and reflect on the day."
+      }
+    ]
+  }
+}

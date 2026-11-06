@@ -22,7 +22,7 @@ from agents.critic import review_plan
 from evals.trip_evaluator import MAX_REVISIONS, evaluate_itinerary
 from memory.trip_memory import find_reusable_plan, save_successful_plan
 from security.preflight import screen_trip_request
-from tools.harness import ToolCallHarness, TOOL_LIMIT_MESSAGE
+from tools.harness import ToolCallHarness, TOOL_ALREADY_USED_MESSAGE, TOOL_LIMIT_MESSAGE
 from tools.registry import TOOL_DEFINITIONS
 from tools.result_validation import ToolResultRejected
 
@@ -448,7 +448,10 @@ def build_itinerary(
                 else:
                     parsed, signature, rejection = harness.validate(name, arguments)
                     if rejection:
-                        if rejection == "tool-call limit reached":
+                        if rejection == TOOL_ALREADY_USED_MESSAGE:
+                            tool_result = {"error": rejection}
+                            print(f"[HARNESS] BLOCKED - {name} already used for this trip request")
+                        elif rejection == "tool-call limit reached":
                             tool_result = {"error": TOOL_LIMIT_MESSAGE}
                             print("[HARNESS] BLOCKED - tool-call limit reached")
                             tools_enabled = False

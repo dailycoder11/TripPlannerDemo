@@ -13,6 +13,11 @@ from tools.registry import dispatch_tool
 
 
 MAX_TOOL_CALLS = 3
+TOOL_ALREADY_USED_MESSAGE = (
+    "This tool has already been used for this trip request. "
+    "Continue with the information already collected; do not request this tool again. "
+    "Mention any information that could not be verified."
+)
 WEATHER_DATE_REJECTION = (
     "Weather can only be requested for dates within the trip start and end dates. "
     "Use a valid trip date or continue with the information already available."
@@ -77,7 +82,7 @@ class ToolCallHarness:
             return None, None, "Tool arguments failed safety validation."
 
         if name in self.used_tools:
-            return None, None, "This tool has already been used for this trip request."
+            return None, None, TOOL_ALREADY_USED_MESSAGE
 
         if name == "get_weather":
             requested = parsed.get("trip_date")
